@@ -19,7 +19,7 @@ try {
 
 // â”€â”€ CORS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000', 'https://eventhub-frontend-git-main-eventhub-s-projects.vercel.app',
+  origin: process.env.CLIENT_URL || 'http://localhost:3000', 'https://eventhub-frontend-git-main-eventhub-s-projects.vercel.app', 'https://eventhub-frontend-six.vercel.app',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -64,4 +64,5 @@ app.listen(PORT, () => {
   console.log(`\nðŸš€ EventHub API Ä‘ang cháº¡y táº¡i http://localhost:${PORT}`);
   console.log(`ðŸ“‹ Health check: http://localhost:${PORT}/api/health\n`);
 });
+
 
