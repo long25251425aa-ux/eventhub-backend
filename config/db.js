@@ -11,6 +11,7 @@ const pool = mysql.createPool({
   queueLimit: 0,
   port: parseInt(process.env.DB_PORT) || 3306,
   timezone: 'Z',
+  charset: 'utf8mb4',
 });
 
 pool.getConnection()
@@ -18,5 +19,6 @@ pool.getConnection()
   .catch(e => console.error('[DB] Connection error:', e.message));
 
 module.exports = pool;
+
 
 
