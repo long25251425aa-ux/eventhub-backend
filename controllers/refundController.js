@@ -88,16 +88,16 @@ exports.review = async (req, res) => {
     // Gửi thông báo cho User
     const [[rr2]] = await db.query('SELECT rr.*, o.order_code FROM refund_requests rr JOIN orders o ON rr.order_id=o.id WHERE rr.id=?', [req.params.id]);
     if (rr2) {
-      const title = status === 'approved' ? 'Refund request được duyệt ✅' : 'Refund request bị từ chối ❌';
+      const title = status === 'approved' ? 'Refund approved!' : 'Refund rejected';
       const msg = status === 'approved'
-        ? `Order ${rr2.order_code} đã được hoàn tiền Success.${admin_note ? ' Ghi chú: ' + admin_note : ''}`
-        : `Refund request đơn ${rr2.order_code} không được chấp nhận.${admin_note ? ' Lý do: ' + admin_note : ''}`;
+        ? Order +rr2.order_code+ has been refunded successfully.+(admin_note?' Note: '+admin_note:'')
+        : Refund request for order +rr2.order_code+ was rejected.+(admin_note?' Reason: '+admin_note:'');
       await db.query(
         'INSERT INTO notifications(user_id, title, message, type) VALUES(?,?,?,?)',
         [rr2.user_id, title, msg, status === 'approved' ? 'success' : 'error']
       ).catch(() => {});
     }
-
+    res.json({ success:true, message: status==='approved'?'Refund approved':'Refund rejected' });
     res.json({ success:true, message: status==='approved'?'Đã duyệt hoàn vé':'Đã từ chối' });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 };
