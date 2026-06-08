@@ -2,7 +2,7 @@
 
 const gen = p => p+'-'+Math.random().toString(36).slice(2,6).toUpperCase()+'-'+Date.now().toString(36).toUpperCase().slice(-4);
 
-// Đảm bảo bảng orders có đúng cột
+// D?m b?o b?ng orders c� d�ng c?t
 const ensureOrdersTable = async () => {
   try {
     await db.query(`CREATE TABLE IF NOT EXISTS orders (
@@ -34,7 +34,7 @@ const ensureOrdersTable = async () => {
       checked_in_at TIMESTAMP NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) CHARACTER SET utf8mb4`);
-  } catch(e) { /* bỏ qua nếu đã tồn tại */ }
+  } catch(e) { /* b? qua n?u d� t?n t?i */ }
 };
 
 // POST /api/orders
@@ -43,18 +43,18 @@ exports.create = async (req, res) => {
   const conn = await db.getConnection();
   try {
     await conn.beginTransaction();
-    // Hỗ trợ cả 2 format: format mới {items} và format cũ {event_id, quantity}
+    // H? tr? c? 2 format: format m?i {items} v� format cu {event_id, quantity}
     let { event_id, items, quantity, coupon_code, notes } = req.body;
 
-    // Format cũ: chuyển sang format mới
+    // Format cu: chuy?n sang format m?i
     if (!items && event_id && quantity) {
-      // Lấy ticket_type mặc định
+      // L?y ticket_type m?c d?nh
       const [tts] = await conn.query('SELECT * FROM ticket_types WHERE event_id=? AND is_active=1 ORDER BY price ASC LIMIT 1', [event_id]);
       if (tts.length) items = [{ ticket_type_id: tts[0].id, quantity: parseInt(quantity)||1 }];
       else {
-        // Nếu không có ticket_type, đặt vé trực tiếp từ events
+        // N?u kh�ng c� ticket_type, d?t v� tr?c ti?p t? events
         const [[ev]] = await conn.query('SELECT * FROM events WHERE id=?', [event_id]);
-        if (!ev) throw new Error('Event không tồn tại');
+        if (!ev) throw new Error('Event kh�ng t?n t?i');
         const total = (ev.price||0) * (parseInt(quantity)||1);
         const orderCode = gen('EVH');
         const payStatus = total===0?'paid':'pending';
@@ -71,21 +71,21 @@ exports.create = async (req, res) => {
       }
     }
 
-    if (!event_id || !items?.length) return res.status(400).json({ success:false, message:'Dữ liệu không hợp lệ' });
+    if (!event_id || !items?.length) return res.status(400).json({ success:false, message:'D? li?u kh�ng h?p l?' });
 
     const [[ev]] = await conn.query("SELECT * FROM events WHERE id=? FOR UPDATE", [event_id]);
-    if (!ev) return res.status(404).json({ success:false, message:'Event không tồn tại' });
+    if (!ev) return res.status(404).json({ success:false, message:'Event kh�ng t?n t?i' });
 
     let subtotal = 0; const valid = [];
     for (const item of items) {
       const ttId = parseInt(item.ticket_type_id) || 0;
-      if (!ttId) throw new Error('ID loại Invalid ticket');
+      if (!ttId) throw new Error('ID lo?i Invalid ticket');
       const [[tt]] = await conn.query('SELECT * FROM ticket_types WHERE id=? AND event_id=? AND is_active=1 FOR UPDATE',
         [ttId, event_id]);
-      if (!tt) throw new Error('Loại Invalid ticket');
+      if (!tt) throw new Error('Lo?i Invalid ticket');
       const rem = tt.quantity - tt.sold;
-      if (rem < item.quantity) throw new Error(`Vé "${tt.name}" không đủ. Còn ${rem} vé.`);
-      if (item.quantity > tt.max_per_order) throw new Error(`Tối đa ${tt.max_per_order} vé mỗi đơn`);
+      if (rem < item.quantity) throw new Error(`V� "${tt.name}" kh�ng d?. C�n ${rem} v�.`);
+      if (item.quantity > tt.max_per_order) throw new Error(`T?i da ${tt.max_per_order} v� m?i don`);
       subtotal += Number(tt.price||0) * item.quantity;
       valid.push({ ...tt, id: ttId, qty: parseInt(item.quantity)||1 });
     }
@@ -126,9 +126,9 @@ exports.create = async (req, res) => {
 
     await conn.commit();
 
-    // Thông báo
+    // Th�ng b�o
     await db.query('INSERT INTO notifications(user_id,title,message,type,action_url) VALUES(?,?,?,?,?)',
-      [req.user.id, 'Booking successful! 🎫', `Đơn ${orderCode} đã tạo.${total>0?' Vui lòng thanh toán.':' Vé đã sẵn sàng.'}`, 'ticket', '/my-tickets']
+      [req.user.id, 'Booking successful! ??', `Don ${orderCode} d� t?o.${total>0?' Vui l�ng thanh to�n.':' V� d� s?n s�ng.'}`, 'ticket', '/my-tickets']
     ).catch(()=>{});
 
     res.status(201).json({ success:true, data:{ orderId, orderCode, total, payStatus, tickets, subtotal, discount }});
@@ -199,13 +199,13 @@ exports.confirmPayment = async (req, res) => {
     if (!o) return res.status(404).json({ success:false, message:'Order not found' });
     await db.query("UPDATE orders SET payment_status='paid',status='paid',paid_at=NOW() WHERE id=?", [req.params.id]);
     await db.query("UPDATE tickets SET status='active' WHERE order_id=?", [req.params.id]);
-    // Thông báo cho user - vé đã sẵn sàng
+    // Th�ng b�o cho user - v� d� s?n s�ng
     await db.query('INSERT INTO notifications(user_id,title,message,type,action_url) VALUES(?,?,?,?,?)',
       [o.user_id,
-       'Thanh toán xác nhận ✅ - Vé của bạn đã sẵn sàng!',
-       `Order ${o.order_code} đã được xác nhận. Vào "Vé của tôi" để xem và xuất vé PDF.`,
+       'Thanh to�n x�c nh?n ? - V� c?a b?n d� s?n s�ng!',
+       `Order ${o.order_code} d� du?c x�c nh?n. V�o "V� c?a t�i" d? xem v� xu?t v� PDF.`,
        'success', '/my-tickets']).catch(()=>{});
-    res.json({ success:true, message:'Xác nhận thanh toán Success! Vé đã gửi cho User.' });
+    res.json({ success:true, message:'X�c nh?n thanh to�n Success! V� d� g?i cho User.' });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 };
 
@@ -214,11 +214,11 @@ exports.checkin = async (req, res) => {
   try {
     const [[t]] = await db.query('SELECT t.*,e.name as event_name FROM tickets t JOIN events e ON t.event_id=e.id WHERE t.ticket_code=?',
       [req.params.code]);
-    if (!t) return res.status(404).json({ success:false, message:'Mã Invalid ticket' });
-    if (t.checked_in) return res.status(400).json({ success:false, message:'Vé Already checked in rồi', checkedInAt:t.checked_in_at });
+    if (!t) return res.status(404).json({ success:false, message:'M� Invalid ticket' });
+    if (t.checked_in) return res.status(400).json({ success:false, message:'V� Already checked in r?i', checkedInAt:t.checked_in_at });
     if (t.status !== 'active') return res.status(400).json({ success:false, message:`Invalid ticket (${t.status})` });
     await db.query("UPDATE tickets SET checked_in=1,checked_in_at=NOW(),status='used' WHERE id=?", [t.id]);
-    res.json({ success:true, message:'Check-in Success! ✅', data:{ ticketCode:t.ticket_code, event:t.event_name }});
+    res.json({ success:true, message:'Check-in Success! ?', data:{ ticketCode:t.ticket_code, event:t.event_name }});
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 };
 
@@ -227,6 +227,6 @@ exports.cancel = async (req, res) => {
   try {
     await db.query("UPDATE orders SET status='cancelled' WHERE id=?", [req.params.id]);
     await db.query("UPDATE tickets SET status='cancelled' WHERE order_id=?", [req.params.id]);
-    res.json({ success:true, message:'Đã hủy Order' });
+    res.json({ success:true, message:'D� h?y Order' });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 };
