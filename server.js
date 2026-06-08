@@ -26,6 +26,7 @@ app.use(cors({
 }));
 
 // â”€â”€ Body parser (giá»›i háº¡n 20MB cho áº£nh base64) â”€â”€â”€â”€
+app.use((req, res, next) => { res.setHeader('Content-Type', 'application/json; charset=utf-8'); next(); });
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
@@ -64,6 +65,7 @@ app.listen(PORT, () => {
   console.log(`\nðŸš€ EventHub API Ä‘ang cháº¡y táº¡i http://localhost:${PORT}`);
   console.log(`ðŸ“‹ Health check: http://localhost:${PORT}/api/health\n`);
 });
+
 
 
 
