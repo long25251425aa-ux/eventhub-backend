@@ -1,16 +1,16 @@
 ﻿const db = require('../config/db');
 
-// POST /api/refunds — user gui yeu cau hoan ve
+// POST /api/refunds - user gui yeu cau hoan ve
 exports.create = async (req, res) => {
   try {
     const { order_id, reason } = req.body;
     if (!order_id || !reason?.trim())
       return res.status(400).json({ success:false, message:'Vui long nhap ly do hoan ve' });
 
-    // Tìm order trực tiếp hoặc qua tickets
+    // T�m order tr?c ti?p ho?c qua tickets
     let [[order]] = await db.query('SELECT * FROM orders WHERE id=? AND user_id=?', [order_id, req.user.id]);
     if (!order) {
-      // Thử tìm qua tickets (user có ticket thuộc order này)
+      // Th? t�m qua tickets (user c� ticket thu?c order n�y)
       const [[ticket]] = await db.query('SELECT o.* FROM orders o JOIN tickets t ON t.order_id=o.id WHERE o.id=? AND t.user_id=?', [order_id, req.user.id]);
       if (!ticket) return res.status(404).json({ success:false, message:'Khong tim thay don hang' });
       order = ticket;
@@ -31,7 +31,7 @@ exports.create = async (req, res) => {
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 };
 
-// GET /api/refunds/my — lay danh sach yeu cau cua user
+// GET /api/refunds/my - lay danh sach yeu cau cua user
 exports.getMy = async (req, res) => {
   try {
     const [rows] = await db.query(
@@ -47,7 +47,7 @@ exports.getMy = async (req, res) => {
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 };
 
-// GET /api/refunds — admin xem tat ca
+// GET /api/refunds - admin xem tat ca
 exports.getAll = async (req, res) => {
   try {
     const [rows] = await db.query(
@@ -63,7 +63,7 @@ exports.getAll = async (req, res) => {
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 };
 
-// PATCH /api/refunds/:id — admin duyet/tu choi
+// PATCH /api/refunds/:id - admin duyet/tu choi
 exports.review = async (req, res) => {
   try {
     const { status, admin_note } = req.body;
@@ -85,7 +85,7 @@ exports.review = async (req, res) => {
       if (o) await db.query('UPDATE events SET sold=GREATEST(0,sold-1) WHERE id=?', [o.event_id]);
     }
 
-    // Gửi thông báo cho User
+    // G?i th�ng b�o cho User
     const [[rr2]] = await db.query('SELECT rr.*, o.order_code FROM refund_requests rr JOIN orders o ON rr.order_id=o.id WHERE rr.id=?', [req.params.id]);
     if (rr2) {
       const title = status === 'approved' ? 'Refund approved!' : 'Refund rejected';
@@ -98,6 +98,6 @@ exports.review = async (req, res) => {
       ).catch(() => {});
     }
     res.json({ success:true, message: status==='approved'?'Refund approved':'Refund rejected' });
-    res.json({ success:true, message: status==='approved'?'Đã duyệt hoàn vé':'Đã từ chối' });
+    res.json({ success:true, message: status==='approved'?'D� duy?t ho�n v�':'D� t? ch?i' });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 };
