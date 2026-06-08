@@ -200,10 +200,10 @@ exports.confirmPayment = async (req, res) => {
     await db.query("UPDATE orders SET payment_status='paid',status='paid',paid_at=NOW() WHERE id=?", [req.params.id]);
     await db.query("UPDATE tickets SET status='active' WHERE order_id=?", [req.params.id]);
     // Th�ng b�o cho user - v� d� s?n s�ng
-    await db.query('INSERT INTO notifications(user_id,title,message,type,action_url) VALUES(?,?,?,?,?)',
-      [o.user_id,
-       'Thanh to�n x�c nh?n ? - V� c?a b?n d� s?n s�ng!',
-       `Order ${o.order_code} d� du?c x�c nh?n. V�o "V� c?a t�i" d? xem v� xu?t v� PDF.`,
+      [o.user_id, 'Payment confirmed - Your ticket is ready!', Order +o.order_code+ has been confirmed. Go to My Tickets to view and export PDF., 'success', '/my-tickets']).catch(()=>{});
+    // Notify admin
+    const [[adminUser]] = await db.query("SELECT id FROM users WHERE role='admin' LIMIT 1");
+    if (adminUser) await db.query('INSERT INTO notifications(user_id,title,message,type,action_url) VALUES(?,?,?,?,?)', [adminUser.id, 'Payment confirmed', Order +o.order_code+ has been paid by user., 'info', '/admin/orders']).catch(()=>{});
        'success', '/my-tickets']).catch(()=>{});
     res.json({ success:true, message:'X�c nh?n thanh to�n Success! V� d� g?i cho User.' });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
