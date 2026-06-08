@@ -233,5 +233,15 @@ r.post('/chat/send', protect, async (req, res) => {
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
+
+// GET /api/users/notifications/all - Admin xem tat ca notifications
+r.get('/notifications/all', protect, async (req, res) => {
+  try {
+    if (!['admin'].includes(req.user.role)) return res.status(403).json({ success: false, message: 'Unauthorized' });
+    const [rows] = await db.query('SELECT n.*, u.name as user_name, u.email as user_email FROM notifications n LEFT JOIN users u ON n.user_id=u.id ORDER BY n.created_at DESC LIMIT 100');
+    res.json({ success: true, data: rows });
+  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
+});
 module.exports = r;
+
 
