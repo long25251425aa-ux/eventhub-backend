@@ -1,4 +1,4 @@
-const db = require('../config/db');
+﻿const db = require('../config/db');
 
 // POST /api/refunds — user gui yeu cau hoan ve
 exports.create = async (req, res) => {
@@ -85,13 +85,13 @@ exports.review = async (req, res) => {
       if (o) await db.query('UPDATE events SET sold=GREATEST(0,sold-1) WHERE id=?', [o.event_id]);
     }
 
-    // Gửi thông báo cho người dùng
+    // Gửi thông báo cho User
     const [[rr2]] = await db.query('SELECT rr.*, o.order_code FROM refund_requests rr JOIN orders o ON rr.order_id=o.id WHERE rr.id=?', [req.params.id]);
     if (rr2) {
-      const title = status === 'approved' ? 'Yêu cầu hoàn vé được duyệt ✅' : 'Yêu cầu hoàn vé bị từ chối ❌';
+      const title = status === 'approved' ? 'Refund request được duyệt ✅' : 'Refund request bị từ chối ❌';
       const msg = status === 'approved'
-        ? `Đơn hàng ${rr2.order_code} đã được hoàn tiền thành công.${admin_note ? ' Ghi chú: ' + admin_note : ''}`
-        : `Yêu cầu hoàn vé đơn ${rr2.order_code} không được chấp nhận.${admin_note ? ' Lý do: ' + admin_note : ''}`;
+        ? `Order ${rr2.order_code} đã được hoàn tiền Success.${admin_note ? ' Ghi chú: ' + admin_note : ''}`
+        : `Refund request đơn ${rr2.order_code} không được chấp nhận.${admin_note ? ' Lý do: ' + admin_note : ''}`;
       await db.query(
         'INSERT INTO notifications(user_id, title, message, type) VALUES(?,?,?,?)',
         [rr2.user_id, title, msg, status === 'approved' ? 'success' : 'error']

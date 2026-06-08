@@ -1,4 +1,4 @@
-const bcrypt = require('bcryptjs');
+﻿const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
 const sign = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
@@ -55,7 +55,7 @@ exports.updateProfile = async (req, res) => {
       [name.trim(), phone||null, avatar||null, req.user.id]
     );
     const [[u]] = await db.query('SELECT id,name,email,phone,avatar,role FROM users WHERE id=?', [req.user.id]);
-    res.json({ success: true, message: 'Cập nhật hồ sơ thành công!', user: u });
+    res.json({ success: true, message: 'Cập nhật hồ sơ Success!', user: u });
   } catch(e) { res.status(500).json({ success: false, message: e.message }); }
 };
 
@@ -72,6 +72,6 @@ exports.changePassword = async (req, res) => {
     if (!ok) return res.status(400).json({ success: false, message: 'Mật khẩu hiện tại không đúng' });
     const hash = await bcrypt.hash(new_password, 10);
     await db.query('UPDATE users SET password=? WHERE id=?', [hash, req.user.id]);
-    res.json({ success: true, message: 'Đổi mật khẩu thành công!' });
+    res.json({ success: true, message: 'Đổi mật khẩu Success!' });
   } catch(e) { res.status(500).json({ success: false, message: e.message }); }
 };

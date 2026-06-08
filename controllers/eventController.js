@@ -1,4 +1,4 @@
-const db = require('../config/db');
+﻿const db = require('../config/db');
 
 const parse = (e) => {
   if (!e) return null;
@@ -107,7 +107,7 @@ exports.getOne = async (req, res) => {
       LEFT JOIN users u ON e.organizer_id=u.id
       LEFT JOIN categories c ON e.category_id=c.id
       WHERE e.id=? OR e.slug=?`, [req.params.id, req.params.id]);
-    if (!rows.length) return res.status(404).json({ success: false, message: 'Không tìm thấy sự kiện' });
+    if (!rows.length) return res.status(404).json({ success: false, message: 'Event not found' });
     const ev = parse(rows[0]);
 
     // Lấy ticket_types
@@ -248,7 +248,7 @@ exports.update = async (req, res) => {
 exports.remove = async (req, res) => {
   try {
     await db.query('DELETE FROM events WHERE id=?', [req.params.id]);
-    res.json({ success: true, message: 'Đã xóa sự kiện' });
+    res.json({ success: true, message: 'Đã xóa Event' });
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 };
 

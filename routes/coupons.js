@@ -1,4 +1,4 @@
-const r = require('express').Router();
+﻿const r = require('express').Router();
 const db = require('../config/db');
 const { protect, adminOnly } = require('../middleware/auth');
 
@@ -12,7 +12,7 @@ r.post('/', protect, async (req, res) => {
       'INSERT INTO coupons(code,type,value,min_order,max_discount,usage_limit,event_id,expires_at,is_active) VALUES(?,?,?,?,?,?,?,?,1)',
       [code.trim().toUpperCase(), type||'percent', value||10, min_order||0, max_discount||null, usage_limit||100, event_id||null, expires_at||null]
     );
-    res.status(201).json({ success: true, message: 'Tạo mã giảm giá thành công', id: r2.insertId });
+    res.status(201).json({ success: true, message: 'Tạo mã giảm giá Success', id: r2.insertId });
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 

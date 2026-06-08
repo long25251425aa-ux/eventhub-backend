@@ -1,4 +1,4 @@
-const db = require('../config/db');
+﻿const db = require('../config/db');
 
 const gen = p => p+'-'+Math.random().toString(36).slice(2,6).toUpperCase()+'-'+Date.now().toString(36).toUpperCase().slice(-4);
 
@@ -54,7 +54,7 @@ exports.create = async (req, res) => {
       else {
         // Nếu không có ticket_type, đặt vé trực tiếp từ events
         const [[ev]] = await conn.query('SELECT * FROM events WHERE id=?', [event_id]);
-        if (!ev) throw new Error('Sự kiện không tồn tại');
+        if (!ev) throw new Error('Event không tồn tại');
         const total = (ev.price||0) * (parseInt(quantity)||1);
         const orderCode = gen('EVH');
         const payStatus = total===0?'paid':'pending';
@@ -74,15 +74,15 @@ exports.create = async (req, res) => {
     if (!event_id || !items?.length) return res.status(400).json({ success:false, message:'Dữ liệu không hợp lệ' });
 
     const [[ev]] = await conn.query("SELECT * FROM events WHERE id=? FOR UPDATE", [event_id]);
-    if (!ev) return res.status(404).json({ success:false, message:'Sự kiện không tồn tại' });
+    if (!ev) return res.status(404).json({ success:false, message:'Event không tồn tại' });
 
     let subtotal = 0; const valid = [];
     for (const item of items) {
       const ttId = parseInt(item.ticket_type_id) || 0;
-      if (!ttId) throw new Error('ID loại vé không hợp lệ');
+      if (!ttId) throw new Error('ID loại Invalid ticket');
       const [[tt]] = await conn.query('SELECT * FROM ticket_types WHERE id=? AND event_id=? AND is_active=1 FOR UPDATE',
         [ttId, event_id]);
-      if (!tt) throw new Error('Loại vé không hợp lệ');
+      if (!tt) throw new Error('Loại Invalid ticket');
       const rem = tt.quantity - tt.sold;
       if (rem < item.quantity) throw new Error(`Vé "${tt.name}" không đủ. Còn ${rem} vé.`);
       if (item.quantity > tt.max_per_order) throw new Error(`Tối đa ${tt.max_per_order} vé mỗi đơn`);
@@ -128,7 +128,7 @@ exports.create = async (req, res) => {
 
     // Thông báo
     await db.query('INSERT INTO notifications(user_id,title,message,type,action_url) VALUES(?,?,?,?,?)',
-      [req.user.id, 'Đặt vé thành công! 🎫', `Đơn ${orderCode} đã tạo.${total>0?' Vui lòng thanh toán.':' Vé đã sẵn sàng.'}`, 'ticket', '/my-tickets']
+      [req.user.id, 'Booking successful! 🎫', `Đơn ${orderCode} đã tạo.${total>0?' Vui lòng thanh toán.':' Vé đã sẵn sàng.'}`, 'ticket', '/my-tickets']
     ).catch(()=>{});
 
     res.status(201).json({ success:true, data:{ orderId, orderCode, total, payStatus, tickets, subtotal, discount }});
@@ -196,16 +196,16 @@ exports.getAll = async (req, res) => {
 exports.confirmPayment = async (req, res) => {
   try {
     const [[o]] = await db.query('SELECT * FROM orders WHERE id=?', [req.params.id]);
-    if (!o) return res.status(404).json({ success:false, message:'Không tìm thấy đơn hàng' });
+    if (!o) return res.status(404).json({ success:false, message:'Order not found' });
     await db.query("UPDATE orders SET payment_status='paid',status='paid',paid_at=NOW() WHERE id=?", [req.params.id]);
     await db.query("UPDATE tickets SET status='active' WHERE order_id=?", [req.params.id]);
     // Thông báo cho user - vé đã sẵn sàng
     await db.query('INSERT INTO notifications(user_id,title,message,type,action_url) VALUES(?,?,?,?,?)',
       [o.user_id,
        'Thanh toán xác nhận ✅ - Vé của bạn đã sẵn sàng!',
-       `Đơn hàng ${o.order_code} đã được xác nhận. Vào "Vé của tôi" để xem và xuất vé PDF.`,
+       `Order ${o.order_code} đã được xác nhận. Vào "Vé của tôi" để xem và xuất vé PDF.`,
        'success', '/my-tickets']).catch(()=>{});
-    res.json({ success:true, message:'Xác nhận thanh toán thành công! Vé đã gửi cho người dùng.' });
+    res.json({ success:true, message:'Xác nhận thanh toán Success! Vé đã gửi cho User.' });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 };
 
@@ -214,11 +214,11 @@ exports.checkin = async (req, res) => {
   try {
     const [[t]] = await db.query('SELECT t.*,e.name as event_name FROM tickets t JOIN events e ON t.event_id=e.id WHERE t.ticket_code=?',
       [req.params.code]);
-    if (!t) return res.status(404).json({ success:false, message:'Mã vé không hợp lệ' });
-    if (t.checked_in) return res.status(400).json({ success:false, message:'Vé đã check-in rồi', checkedInAt:t.checked_in_at });
-    if (t.status !== 'active') return res.status(400).json({ success:false, message:`Vé không hợp lệ (${t.status})` });
+    if (!t) return res.status(404).json({ success:false, message:'Mã Invalid ticket' });
+    if (t.checked_in) return res.status(400).json({ success:false, message:'Vé Already checked in rồi', checkedInAt:t.checked_in_at });
+    if (t.status !== 'active') return res.status(400).json({ success:false, message:`Invalid ticket (${t.status})` });
     await db.query("UPDATE tickets SET checked_in=1,checked_in_at=NOW(),status='used' WHERE id=?", [t.id]);
-    res.json({ success:true, message:'Check-in thành công! ✅', data:{ ticketCode:t.ticket_code, event:t.event_name }});
+    res.json({ success:true, message:'Check-in Success! ✅', data:{ ticketCode:t.ticket_code, event:t.event_name }});
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 };
 
@@ -227,6 +227,6 @@ exports.cancel = async (req, res) => {
   try {
     await db.query("UPDATE orders SET status='cancelled' WHERE id=?", [req.params.id]);
     await db.query("UPDATE tickets SET status='cancelled' WHERE order_id=?", [req.params.id]);
-    res.json({ success:true, message:'Đã hủy đơn hàng' });
+    res.json({ success:true, message:'Đã hủy Order' });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 };

@@ -1,4 +1,4 @@
-const r = require('express').Router();
+﻿const r = require('express').Router();
 const db = require('../config/db');
 const { protect, adminOnly } = require('../middleware/auth');
 
@@ -36,7 +36,7 @@ r.get('/', protect, adminOnly, async (req, res) => {
 r.patch('/:id/toggle', protect, adminOnly, async (req, res) => {
   try {
     const [[rv]] = await db.query('SELECT is_visible FROM reviews WHERE id=?', [req.params.id]);
-    if (!rv) return res.status(404).json({ success: false, message: 'Không tìm thấy' });
+    if (!rv) return res.status(404).json({ success: false, message: 'Not found' });
     await db.query('UPDATE reviews SET is_visible=? WHERE id=?', [!rv.is_visible, req.params.id]);
     res.json({ success: true });
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
